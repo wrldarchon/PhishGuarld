@@ -3,28 +3,35 @@
 <title>PhishGuard FINAL - Phishing Detection</title>
 <meta name="description" content="PhishGuard FINAL - AI phishing detection for URL, Email and Website.">
 <script src="https://cdn.tailwindcss.com"></script>
-<style>body{font-family:Inter,Arial} .tab.active{background:#0a2a5e;color:#fff}</style>
+<style>body{font-family:Inter,Arial} .tab.active{background:#0a2a5e;color:#fff} .modal-bg{background:rgba(0,0,0,.6)}</style>
 </head>
 <body class="bg-[#f1f3f6]">
 <!-- TOP -->
 <div class="bg-[#0a2a5e] text-white p-4 flex justify-between items-center">
 <div class="flex gap-2 items-center"><div class="text-3xl">🛡️</div><div><h1 class="text-2xl font-bold leading-none">PhishGuard<br><span class="text-sm tracking-widest">FINAL</span></h1></div></div>
-<div class="flex gap-3 items-center"><span>🔔</span><span>❔</span><div class="bg-blue-600 w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold">AK</div></div>
+<div class="flex gap-3 items-center">
+<span>🔔</span><span>❔</span>
+<!-- AUTH AREA -->
+<div id="authArea" class="flex gap-2 items-center"></div>
+</div>
 </div>
 
 <div class="flex">
-<!-- SIDEBAR - hidden on iPhone, shows on desktop -->
+<!-- SIDEBAR -->
 <div class="hidden md:block w-[230px] bg-white min-h-screen p-5 border-r">
 <h3 class="font-bold mb-4 px-2">Dashboard</h3>
 <a class="block bg-blue-600 text-white p-3 rounded-lg mb-2 font-bold">📊 Dashboard</a>
-<a class="block p-3 rounded-lg mb-2" onclick="showBulk()">📁 Bulk Scan</a>
-<a class="block p-3 rounded-lg mb-2" onclick="showHistory()">📈 Live Feed</a>
-<a class="block p-3 rounded-lg" onclick="alert('Saved in this iPhone')">👤 Login</a>
+<a class="block p-3 rounded-lg mb-2 cursor-pointer" onclick="showBulk()">📁 Bulk Scan</a>
+<a class="block p-3 rounded-lg mb-2 cursor-pointer" onclick="showHistory()">📈 Live Feed</a>
+<a class="block p-3 rounded-lg cursor-pointer" id="sidebarLogin" onclick="openAuth('login')">👤 Login</a>
 <p class="text-xs text-gray-400 mt-10 px-2">v2.4.1 • Status: Online<br>iPhone Edition</p>
+<div id="userCard" class="hidden mt-4 bg-blue-50 p-3 rounded-xl text-sm"></div>
 </div>
 
 <!-- MAIN -->
 <div class="flex-1 p-4 md:p-6 max-w-5xl mx-auto w-full">
+<div id="loginBanner" class="hidden bg-yellow-100 border border-yellow-300 p-3 rounded-xl mb-4 text-sm flex justify-between items-center"><span>⚠️ <b>You're browsing as Guest.</b> Login to save your history & reports.</span><button onclick="openAuth('login')" class="bg-blue-600 text-white px-4 py-1.5 rounded-lg font-bold">Login / Sign Up</button></div>
+
 <h2 class="text-3xl font-bold">Phishing Detection</h2>
 <p class="text-gray-500 mb-4">Analyze URLs and email headers for phishing threats with AI</p>
 
@@ -71,29 +78,126 @@
 </div>
 </div>
 
+<!-- AUTH MODAL -->
+<div id="authModal" class="hidden fixed inset-0 modal-bg z-50 flex items-center justify-center p-4" onclick="if(event.target==this) closeAuth()">
+<div class="bg-white w-full max-w-md rounded-2xl p-6 relative">
+<button onclick="closeAuth()" class="absolute top-3 right-4 text-xl">✕</button>
+<div class="text-center mb-4"><div class="text-4xl">🛡️</div><h2 id="authTitle" class="text-2xl font-bold mt-1">Welcome Back</h2><p id="authSub" class="text-gray-500 text-sm">Login to PhishGuard FINAL</p></div>
+<div class="flex bg-gray-100 rounded-full p-1 mb-4">
+<button id="btn-login-tab" onclick="switchAuth('login')" class="flex-1 py-2 rounded-full bg-[#0a2a5e] text-white font-bold text-sm">Login</button>
+<button id="btn-signup-tab" onclick="switchAuth('signup')" class="flex-1 py-2 rounded-full font-bold text-sm">Sign Up</button>
+</div>
+<div id="authError" class="hidden bg-red-100 text-red-700 text-sm p-3 rounded-lg mb-3"></div>
+<div id="authSuccess" class="hidden bg-green-100 text-green-700 text-sm p-3 rounded-lg mb-3"></div>
+<div id="nameField" class="hidden"><label class="text-sm font-bold">Full Name</label><input id="authName" placeholder="Abdul Kareem" class="w-full border p-3 rounded-xl mt-1 mb-3"></div>
+<label class="text-sm font-bold">Email</label><input id="authEmail" type="email" placeholder="you@example.com" class="w-full border p-3 rounded-xl mt-1 mb-3">
+<label class="text-sm font-bold">Password</label><input id="authPass" type="password" placeholder="••••••••" class="w-full border p-3 rounded-xl mt-1 mb-3">
+<div id="confirmField" class="hidden"><label class="text-sm font-bold">Confirm Password</label><input id="authPass2" type="password" placeholder="••••••••" class="w-full border p-3 rounded-xl mt-1 mb-3"></div>
+<button id="authSubmit" onclick="handleAuth()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold">Login</button>
+<p class="text-center text-sm mt-3 text-gray-500"><span id="authToggleText">Don't have an account?</span> <a href="#" onclick="switchAuth(authMode=='login'?'signup':'login');return false" class="text-blue-600 font-bold" id="authToggleLink">Sign Up</a></p>
+<p class="text-center text-xs text-gray-400 mt-2">Demo: use any email + password 6+ chars. Saved only on this device.</p>
+</div>
+</div>
+
 <script>
 let type='url';
+let authMode='login';
 function setType(t){ type=t; document.querySelectorAll('.tab').forEach(e=>e.classList.remove('active')); document.getElementById('tab-'+(t=='web'?'web':t)).classList.add('active'); }
 function demoURL(){ type='url'; setType('url'); document.getElementById('inputBox').value='http://paypal-login-secure.xyz/verify'; }
 function demoEmail(){ type='email'; setType('email'); document.getElementById('inputBox').value='From: PayPal <support@paypal-secure.xyz>\nReturn-Path: <attacker@evil.com>\nAuthentication-Results: spf=fail dkim=fail dmarc=fail\nSubject: Verify your account\nhttps://paypal-login-secure.xyz/verify'; }
 
+// ===== AUTH =====
+function getUsers(){ return JSON.parse(localStorage.getItem('phishguard_users')||'[]'); }
+function saveUsers(u){ localStorage.setItem('phishguard_users', JSON.stringify(u)); }
+function getSession(){ return JSON.parse(localStorage.getItem('phishguard_session')||'null'); }
+function getInitials(name){ return name.trim().split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase() || 'AK'; }
+function openAuth(mode){ switchAuth(mode||'login'); document.getElementById('authModal').classList.remove('hidden'); }
+function closeAuth(){ document.getElementById('authModal').classList.add('hidden'); }
+function switchAuth(mode){
+  authMode=mode;
+  document.getElementById('authError').classList.add('hidden');
+  document.getElementById('authSuccess').classList.add('hidden');
+  let isLogin = mode=='login';
+  document.getElementById('authTitle').innerText = isLogin ? 'Welcome Back' : 'Create Account';
+  document.getElementById('authSub').innerText = isLogin ? 'Login to PhishGuard FINAL' : 'Join PhishGuard FINAL - Free';
+  document.getElementById('authSubmit').innerText = isLogin ? 'Login' : 'Sign Up';
+  document.getElementById('authToggleText').innerText = isLogin ? "Don't have an account?" : "Already have an account?";
+  document.getElementById('authToggleLink').innerText = isLogin ? 'Sign Up' : 'Login';
+  document.getElementById('nameField').classList.toggle('hidden', isLogin);
+  document.getElementById('confirmField').classList.toggle('hidden', isLogin);
+  document.getElementById('btn-login-tab').className = 'flex-1 py-2 rounded-full font-bold text-sm ' + (isLogin ? 'bg-[#0a2a5e] text-white' : 'text-gray-600');
+  document.getElementById('btn-signup-tab').className = 'flex-1 py-2 rounded-full font-bold text-sm ' + (!isLogin ? 'bg-[#0a2a5e] text-white' : 'text-gray-600');
+}
+function showAuthErr(msg){ let e=document.getElementById('authError'); e.innerText=msg; e.classList.remove('hidden'); }
+function handleAuth(){
+  let email=document.getElementById('authEmail').value.trim().toLowerCase();
+  let pass=document.getElementById('authPass').value;
+  let name=document.getElementById('authName').value.trim();
+  let pass2=document.getElementById('authPass2').value;
+  if(!email || !email.includes('@')) return showAuthErr('Enter a valid email.');
+  if(pass.length < 6) return showAuthErr('Password must be at least 6 characters.');
+  let users=getUsers();
+  if(authMode=='signup'){
+    if(!name) return showAuthErr('Enter your full name.');
+    if(pass !== pass2) return showAuthErr('Passwords do not match.');
+    if(users.find(u=>u.email==email)) return showAuthErr('Account already exists. Please Login.');
+    let user={name,email,pass:btoa(pass),created:new Date().toLocaleString()};
+    users.push(user); saveUsers(users);
+    localStorage.setItem('phishguard_session', JSON.stringify({name,email}));
+    document.getElementById('authSuccess').innerText='Account created! Welcome '+name; document.getElementById('authSuccess').classList.remove('hidden');
+    setTimeout(()=>{ closeAuth(); refreshAuthUI(); },800);
+  } else {
+    let user=users.find(u=>u.email==email && u.pass==btoa(pass));
+    if(!user) return showAuthErr('Wrong email or password. Try Sign Up if you are new.');
+    localStorage.setItem('phishguard_session', JSON.stringify({name:user.name,email:user.email}));
+    document.getElementById('authSuccess').innerText='Welcome back '+user.name; document.getElementById('authSuccess').classList.remove('hidden');
+    setTimeout(()=>{ closeAuth(); refreshAuthUI(); },800);
+  }
+}
+function logout(){
+  localStorage.removeItem('phishguard_session');
+  refreshAuthUI();
+}
+function refreshAuthUI(){
+  let s=getSession();
+  let area=document.getElementById('authArea');
+  let banner=document.getElementById('loginBanner');
+  let userCard=document.getElementById('userCard');
+  let sidebarLogin=document.getElementById('sidebarLogin');
+  if(s){
+    area.innerHTML='<div class="bg-blue-600 w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold" title="'+s.name+'">'+getInitials(s.name)+'</div><button onclick="logout()" class="bg-white text-[#0a2a5e] px-3 py-1.5 rounded-lg text-sm font-bold">Logout</button>';
+    banner.classList.add('hidden');
+    userCard.classList.remove('hidden');
+    userCard.innerHTML='<b>👋 '+s.name+'</b><br><span class="text-gray-500 text-xs">'+s.email+'</span><br><button onclick="logout()" class="text-red-600 font-bold mt-2 text-xs">Logout →</button>';
+    sidebarLogin.innerText='👤 '+s.name+' (Logout)';
+    sidebarLogin.onclick=logout;
+    loadHistory();
+  } else {
+    area.innerHTML='<button onclick="openAuth(\'login\')" class="bg-white text-[#0a2a5e] px-4 py-1.5 rounded-lg text-sm font-bold">Login</button><button onclick="openAuth(\'signup\')" class="bg-blue-600 px-4 py-1.5 rounded-lg text-sm font-bold">Sign Up</button>';
+    banner.classList.remove('hidden');
+    userCard.classList.add('hidden');
+    sidebarLogin.innerText='👤 Login';
+    sidebarLogin.onclick=()=>openAuth('login');
+    loadHistory();
+  }
+}
+function historyKey(){ let s=getSession(); return s ? 'phishguard_'+s.email : 'phishguard'; }
+function loadHistory(){ let h=JSON.parse(localStorage.getItem(historyKey())||'[]'); document.getElementById('history').innerHTML=h.length?h.map(x=>'<div>• '+x.d+' — '+x.s+'/100 '+x.l+' • '+x.t+'</div>').join(''):'<div class="text-gray-400">No scans yet. Login to save history.</div>'; }
+
+// ===== ANALYZE (same as before) =====
 function analyze(){
   let raw=document.getElementById('inputBox').value.trim();
   if(!raw) return alert('Paste URL or email header');
   let score=0, reasons=[], checks=[], ai=0;
   let urlMatch=raw.match(/https?:\/\/[^\s]+/); let url=urlMatch?urlMatch[0]:raw;
   let domain=''; try{ domain=new URL(url.startsWith('http')?url:'http://'+url).hostname; }catch(e){ domain=raw; }
-
-  // BRAND
   let brands=['paypal','google','apple','microsoft','amazon','binance','facebook','instagram','netflix','bank'];
   let found=brands.find(b=>raw.toLowerCase().includes(b) && !domain.toLowerCase().includes(b+'.com') && !domain.toLowerCase().endsWith(b+'.com'));
   if(found){ score+=30; reasons.push('Brand impersonation: '+found+' in '+domain); checks.push(['Brand','Impersonation '+found,'Fail']); }
-  // SUSPICIOUS TLD / AGE SIMULATION
   if(/\.(xyz|top|click|shop|online|live|tk)$/.test(domain)){ score+=20; reasons.push('Suspicious TLD: '+domain); }
   if(domain.includes('-')||domain.length>25){ score+=10; reasons.push('Suspicious domain pattern: hyphens / long'); }
   if(raw.toLowerCase().includes('verify')||raw.toLowerCase().includes('suspend')||raw.toLowerCase().includes('urgent')){ score+=10; reasons.push('Urgency / social engineering language'); }
   if(!raw.startsWith('https')){ score+=15; reasons.push('No HTTPS / SSL invalid/missing'); checks.push(['SSL','Missing / Invalid','Fail']); } else checks.push(['SSL','Present','Pass']);
-  // EMAIL CHECKS
   if(type=='email' || raw.includes('Return-Path') || raw.includes('From:')){
     if(raw.includes('Return-Path') && raw.includes('From:')){
       let from=raw.match(/From:.*<([^>]+)>/); let ret=raw.match(/Return-Path:.*<([^>]+)>/);
@@ -103,9 +207,7 @@ function analyze(){
     if(raw.includes('dkim=fail')){ score+=15; reasons.push('DKIM FAIL'); checks.push(['DKIM','FAIL','Fail']); }
     if(raw.includes('dmarc=fail')){ score+=10; reasons.push('DMARC FAIL'); checks.push(['DMARC','FAIL','Fail']); }
   }
-  // PHISHTANK-LIKE
   if(domain.includes('paypal-login')||domain.includes('secure-')){ score+=25; reasons.push('CONFIRMED - Pattern matches known PhishTank DB'); checks.push(['PhishTank','FOUND','Fail']); }
-  // WEBSITE DETECTION
   if(type=='web'){ score+=10; reasons.push('Website Detection: Login form detected'); checks.push(['Login Form','Detected','Fail']); checks.push(['Iframe','Detected','Suspicious']); }
   checks.push(['Domain',domain,'Checked']); checks.push(['VirusTotal','Check via API','See Console']);
   ai=Math.min(99, Math.max(2, score+Math.random()*5));
@@ -121,14 +223,13 @@ function analyze(){
   document.getElementById('recs').innerHTML=(level=='Critical'||level=='High'?['BLOCK - Do not click. Report as phishing.','Verify via official app, not link.','Enable 2FA.','If you entered password, change it NOW.']:['Looks safe, but verify via official app.']).map(r=>'<li>'+r+'</li>').join('');
   document.getElementById('previewUrl').innerText=domain;
   document.getElementById('recBox').innerText=level=='Critical'||level=='High'?'Block this domain immediately. Do not interact. Report to IT/Security team.':'Looks relatively safe, but always verify via official app.';
-  // Save history like CyberVaultOrg saved projects
-  let h=JSON.parse(localStorage.getItem('phishguard')||'[]'); h.unshift({d:domain,s:score,l:level,t:new Date().toLocaleString()}); localStorage.setItem('phishguard',JSON.stringify(h.slice(0,10)));
-  document.getElementById('history').innerHTML=h.map(x=>'<div>• '+x.d+' — '+x.s+'/100 '+x.l+' • '+x.t+'</div>').join('');
+  let h=JSON.parse(localStorage.getItem(historyKey())||'[]'); h.unshift({d:domain,s:score,l:level,t:new Date().toLocaleString()}); localStorage.setItem(historyKey(),JSON.stringify(h.slice(0,10)));
+  loadHistory();
   document.getElementById('result').scrollIntoView({behavior:'smooth'});
-  // Try real WHOIS / VirusTotal via free API in background (optional)
   fetch('https://who-dat.net/api/v1/domain/'+domain).then(r=>r.json()).then(j=>console.log('WHOIS',j)).catch(e=>{});
 }
 function showBulk(){ alert('Bulk Scan on iPhone: Paste many URLs separated by new line in the box and click Analyze - each line will be checked. Full Bulk page coming next.'); }
-function showHistory(){ let h=JSON.parse(localStorage.getItem('phishguard')||'[]'); alert(h.length?h.map(x=>x.d+' - '+x.s).join('\n'):'No scans yet on this iPhone'); }
+function showHistory(){ let h=JSON.parse(localStorage.getItem(historyKey())||'[]'); alert(h.length?h.map(x=>x.d+' - '+x.s).join('\n'):'No scans yet on this iPhone'); }
+refreshAuthUI();
 </script>
 </body></html>
